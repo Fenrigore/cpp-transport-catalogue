@@ -39,14 +39,25 @@ namespace catalogue {
 		std::vector<Stop*> stops{};
 	};
 
+	struct BusInfo {
+		BusInfo(size_t stops_count, size_t unique_stops, double route_distance)
+			:count{ stops_count },
+			unique{ unique_stops },
+			distance{ route_distance } {}
+		size_t count{};
+		size_t unique{};
+		double distance{};
+	};
+
 	class TransportCatalogue {
 	public:
 		void AddStop(std::string_view name, geo::Coordinates coordinates);
 		void AddBus(std::string_view route, const std::vector<std::string_view>& stops);
-		Bus* FindBus(std::string_view route) const;
-		Stop* FindStop(std::string_view name)const;
+		const Bus* FindBus(std::string_view route) const;
+		const Stop* FindStop(std::string_view name)const;
+		const std::set<std::string_view>* FindRoutes(std::string_view name) const;
 		std::set<std::string_view> GetBusesByStop(std::string_view stop_name) const;
-		std::tuple<size_t, size_t, double> GetBusInfo(std::string_view route) const;
+		BusInfo GetBusInfo(std::string_view route) const;
 
 
 	private:
@@ -54,6 +65,7 @@ namespace catalogue {
 		std::unordered_map< std::string_view, Stop*> stop_indexes_by_name_{};
 		std::deque<Bus> buses_{};
 		std::unordered_map<std::string_view, Bus*> bus_indexes_by_name_{};
+		std::unordered_map< std::string_view, std::set<std::string_view>> routes_containing_stop_{};
 	};
 }
 

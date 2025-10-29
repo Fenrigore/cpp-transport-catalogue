@@ -28,6 +28,7 @@ namespace ireader {
          */
         void ParseLine(std::string_view line);
 
+        void Read(std::istream& input, catalogue::TransportCatalogue& catalogue);
         /**
          * Наполняет данными транспортный справочник, используя команды из commands_
          */

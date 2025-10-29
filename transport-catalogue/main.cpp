@@ -3,30 +3,16 @@
 
 #include "input_reader.h"
 #include "stat_reader.h"
+#include <fstream>
 
 using namespace std;
 
 int main() {
+    //создали каталог
     catalogue::TransportCatalogue catalogue;
-
-    int base_request_count;
-    cin >> base_request_count >> ws;
-
-    {
-        ireader::InputReader reader;
-        for (int i = 0; i < base_request_count; ++i) {
-            string line;
-            getline(cin, line);
-            reader.ParseLine(line);
-        }
-        reader.ApplyCommands(catalogue);
-    }
-
-    int stat_request_count;
-    cin >> stat_request_count >> ws;
-    for (int i = 0; i < stat_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        sreader::ParseAndPrintStat(catalogue, line, cout);
-    }
+    //создали ридер, считали данные
+    ireader::InputReader reader;
+    reader.Read(cin, catalogue);
+    //считали команды
+    sreader::Read(cin, cout, catalogue);
 }

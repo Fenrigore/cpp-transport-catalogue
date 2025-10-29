@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
-
+#include <iostream>
 namespace redact{
 /**
  * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
@@ -103,6 +103,17 @@ void ireader::InputReader::ParseLine(std::string_view line) {
         command_description.command == "Stop" ? create_stops_commands_.push_back(std::move(command_description))
             : create_buses_commands_.push_back(std::move(command_description));
     }
+}
+
+void ireader::InputReader::Read(std::istream& input, catalogue::TransportCatalogue& catalogue){
+    int base_request_count;
+    input >> base_request_count >> std::ws;
+    for (int i = 0; i < base_request_count; ++i) {
+        std::string line;
+        std::getline(input, line);
+        ParseLine(line);
+    }
+    ApplyCommands(catalogue);
 }
 
 void ireader::InputReader::ApplyCommands([[maybe_unused]] catalogue::TransportCatalogue& catalogue) const {

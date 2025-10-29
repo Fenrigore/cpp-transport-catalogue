@@ -26,10 +26,15 @@ void catalogue::TransportCatalogue::AddBus(std::string_view route, const std::ve
 	buses_.push_back(std::move(temp_bus));
 	//беру имя маршрута, задаю его как ключ для хэш таблицы маршрутов
 	//и для этого ключа передаю указатель на маршрут
-	bus_indexes_by_name_[buses_.back().route] = &buses_.back();
+	Bus* current_bus = &buses_.back();
+	bus_indexes_by_name_[buses_.back().route] = current_bus;
+	//Запоминаю для всех существующих автобусов, что они содержатся в этом маршруте
+	for (const auto stop : buses_.back().stops) {
+		routes_containing_stop_[stop->name].insert(current_bus->route);
+	}
 }
 
-catalogue::Bus* catalogue::TransportCatalogue::FindBus(std::string_view route) const {
+const catalogue::Bus* catalogue::TransportCatalogue::FindBus(std::string_view route) const {
 	auto it = bus_indexes_by_name_.find(route);
 	if (it == bus_indexes_by_name_.end()) {
 		return nullptr;
@@ -37,12 +42,24 @@ catalogue::Bus* catalogue::TransportCatalogue::FindBus(std::string_view route) c
 	return it->second;
 }
 
-catalogue::Stop* catalogue::TransportCatalogue::FindStop(std::string_view name) const {
+const catalogue::Stop* catalogue::TransportCatalogue::FindStop(std::string_view name) const {
 	auto it = stop_indexes_by_name_.find(name);
 	if (it == stop_indexes_by_name_.end()) {
 		return nullptr;
 	}
 	return it->second;
+}
+
+const std::set<std::string_view>* catalogue::TransportCatalogue::FindRoutes(std::string_view name) const
+{
+	//ищу остановку в routes_containing_stop_
+	auto routes_containing_stop_it = routes_containing_stop_.find(name);
+	//если не нашел, то остановки нет и передаю nullptr
+	if (routes_containing_stop_it == routes_containing_stop_.end()){
+		return nullptr;
+	}
+	//если нашёл, то передаю ссылку на список маршрутов, в которых есть эта остановка
+	return &(routes_containing_stop_it->second);
 }
 
 std::set<std::string_view> catalogue::TransportCatalogue::GetBusesByStop(std::string_view stop_name) const
@@ -62,10 +79,10 @@ std::set<std::string_view> catalogue::TransportCatalogue::GetBusesByStop(std::st
 	return buses;
 }
 
-std::tuple<size_t, size_t, double> catalogue::TransportCatalogue::GetBusInfo(std::string_view route) const
+catalogue::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view route) const
 {
 	//получаю автобус
-	Bus* bus = FindBus(route);
+	const Bus* bus = FindBus(route);
 	if (bus == nullptr) {
 		return { 0,0,0. };
 	}
