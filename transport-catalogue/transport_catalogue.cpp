@@ -3,6 +3,28 @@
 #include <unordered_set>
 #include <algorithm>
 
+#include <iostream>
+
+int catalogue::TransportCatalogue::ComputeRouteDistance(std::string_view from, std::string_view to) const {
+	//получаю указатели на остановки
+	const Stop* first_stop = FindStop(from);
+	const Stop* second_stop = FindStop(to);
+	if (!first_stop || !second_stop) {
+		return 0;
+	}
+	//ищу остановки в хэш таблице дистанций
+	auto distance_iter = distances_between_stops_.find({ first_stop, second_stop });
+	//если не нашлось расстояние от А до Б, то проверяю есть ли от Б до А
+	if (distance_iter == distances_between_stops_.end()) {
+		distance_iter = distances_between_stops_.find({ second_stop, first_stop });
+		//если и такого расстояния нет, значит нет
+		if (distance_iter == distances_between_stops_.end()) {
+			return 0;
+		}
+	}
+	return distance_iter->second;
+}
+
 void catalogue::TransportCatalogue::AddStop(std::string_view name, geo::Coordinates coordinates){
 	//добавляю в дэк сотановок новую остановку
 	stops_.push_back({ std::string(name),std::move(coordinates)});
@@ -50,8 +72,7 @@ const catalogue::Stop* catalogue::TransportCatalogue::FindStop(std::string_view 
 	return it->second;
 }
 
-const std::set<std::string_view>* catalogue::TransportCatalogue::FindRoutes(std::string_view name) const
-{
+const std::set<std::string_view>* catalogue::TransportCatalogue::FindRoutes(std::string_view name) const {
 	//ищу остановку в routes_containing_stop_
 	auto routes_containing_stop_it = routes_containing_stop_.find(name);
 	//если не нашел, то остановки нет и передаю nullptr
@@ -62,45 +83,36 @@ const std::set<std::string_view>* catalogue::TransportCatalogue::FindRoutes(std:
 	return &(routes_containing_stop_it->second);
 }
 
-std::set<std::string_view> catalogue::TransportCatalogue::GetBusesByStop(std::string_view stop_name) const
-{	//сэт имён маршрутов, у которых в маршруте есть остановка с именем stop_name
-	std::set<std::string_view> buses{};
-	//прохожусь по списку маршрутов
-	for (const auto& bus : buses_) {
-		//в маршруте ищу остановку с именем stop_name
-		auto it = std::find_if(bus.stops.begin(), bus.stops.end(), [stop_name](const Stop* stop) {
-			return stop->name == stop_name;
-			});
-		if (it != bus.stops.end()) {
-			//если нашлось, записываю в сэт
-			buses.insert(bus.route);
-		}
-	}
-	return buses;
-}
-
-catalogue::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view route) const
-{
+catalogue::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view route) const {
 	//получаю автобус
 	const Bus* bus = FindBus(route);
 	if (bus == nullptr) {
-		return { 0,0,0. };
+		return { 0,0,0., 0};
 	}
 	//переменная для получения уникальных остановок
 	std::unordered_set<std::string_view> unique;
 	//и для подсчета дистанции
-	double distance{};
+	double geo_distance{};
+	int route_distance{};
 	//добавляю каждое название остановки в unordered_set
 	//в нём останутся только уникальные
 	for (auto it = bus->stops.begin(); it != bus->stops.end(); ++it) {
 		unique.insert((*it)->name);
-		//тут считаю расстояния
+		//тут считаю расстояния географические
 		if (it + 1 != bus->stops.end()) {
 			double current_distance = ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
-			distance += current_distance;
+			geo_distance += current_distance;
+			route_distance += ComputeRouteDistance((*it)->name, (*(it + 1))->name);
 		}
 	}
-	return { bus->stops.size(),unique.size(), distance };
+	return { bus->stops.size(),unique.size(), geo_distance,  route_distance };
 }
 
 
+void catalogue::TransportCatalogue::AddDistance(std::string_view from, std::string_view to, int distance) {
+	const Stop* const stop_a = FindStop(from);
+	const Stop* const stop_b = FindStop(to);
+	if (stop_a && stop_b) {
+		distances_between_stops_[{ stop_a, stop_b }] = distance;
+	}
+}

@@ -26,9 +26,11 @@ void sreader::ParseAndPrintStat(const catalogue::TransportCatalogue& transport_c
         }
         else {
             //Bus X: R stops on route, U unique stops, L route length 
+            //Bus X: R stops on route, U unique stops, L route length, C curvature
             output << "Bus " << requested_name << ": " << info.count
                 << " stops on route, " << info.unique << " unique stops, "
-                << std::setprecision(6) << info.distance << " route length" << std::endl;
+                << info.route_distance << " route length, " <<
+                info.curvature << " curvature" << std::endl;
         }
     }
     else if (type_of_request == "Stop") {
@@ -71,5 +73,3 @@ void sreader::Read(std::istream& input, std::ostream& output, catalogue::Transpo
         ParseAndPrintStat(catalogue, line, output);
     }
 }
-
-
