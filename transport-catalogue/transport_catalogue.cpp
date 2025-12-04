@@ -7,8 +7,8 @@
 
 int catalogue::TransportCatalogue::ComputeRouteDistance(std::string_view from, std::string_view to) const {
 	//получаю указатели на остановки
-	const Stop* first_stop = FindStop(from);
-	const Stop* second_stop = FindStop(to);
+	const domain::Stop* first_stop = FindStop(from);
+	const domain::Stop* second_stop = FindStop(to);
 	if (!first_stop || !second_stop) {
 		return 0;
 	}
@@ -25,16 +25,16 @@ int catalogue::TransportCatalogue::ComputeRouteDistance(std::string_view from, s
 	return distance_iter->second;
 }
 
-void catalogue::TransportCatalogue::AddStop(std::string_view name, geo::Coordinates coordinates){
+void catalogue::TransportCatalogue::AddStop(std::string_view name, geo::Coordinates coordinates) {
 	//добавляю в дэк сотановок новую остановку
-	stops_.push_back({ std::string(name),std::move(coordinates)});
+	stops_.push_back({ std::string(name),std::move(coordinates) });
 	//беру имя остановки, задаю его как ключ для хэш таблицы остановок
 	//и для этого ключа передаю значение (указатель на остановку в дэке)
 	stop_indexes_by_name_[stops_.back().name] = &stops_.back();
 }
 
-void catalogue::TransportCatalogue::AddBus(std::string_view route, const std::vector<std::string_view>& stops){
-	std::vector<Stop*> temp_stops{}; //создаю временный вектор указателей на остановки
+void catalogue::TransportCatalogue::AddBus(std::string_view route, const std::vector<std::string_view>& stops, bool is_circle_route) {
+	std::vector<domain::Stop*> temp_stops{}; //создаю временный вектор указателей на остановки
 	for (const std::string_view& stop : stops) { //для каждого названия остановки
 		//проверяю есть ли остановка с таким названием в хэше остановок
 		if (auto index_it = stop_indexes_by_name_.find(stop); index_it != stop_indexes_by_name_.end()) {
@@ -43,12 +43,12 @@ void catalogue::TransportCatalogue::AddBus(std::string_view route, const std::ve
 		}
 	}
 	//подготовил временный вектор, остальные данные уже есть. Создаю маршрут
-	Bus temp_bus(std::string(route), std::move(temp_stops));
+	domain::Bus temp_bus(std::string(route), std::move(temp_stops), is_circle_route);
 	//передаю его в дэк маршрутов
 	buses_.push_back(std::move(temp_bus));
 	//беру имя маршрута, задаю его как ключ для хэш таблицы маршрутов
 	//и для этого ключа передаю указатель на маршрут
-	Bus* current_bus = &buses_.back();
+	domain::Bus* current_bus = &buses_.back();
 	bus_indexes_by_name_[buses_.back().route] = current_bus;
 	//Запоминаю для всех существующих автобусов, что они содержатся в этом маршруте
 	for (const auto stop : buses_.back().stops) {
@@ -56,7 +56,7 @@ void catalogue::TransportCatalogue::AddBus(std::string_view route, const std::ve
 	}
 }
 
-const catalogue::Bus* catalogue::TransportCatalogue::FindBus(std::string_view route) const {
+const domain::Bus* catalogue::TransportCatalogue::FindBus(std::string_view route) const {
 	auto it = bus_indexes_by_name_.find(route);
 	if (it == bus_indexes_by_name_.end()) {
 		return nullptr;
@@ -64,7 +64,7 @@ const catalogue::Bus* catalogue::TransportCatalogue::FindBus(std::string_view ro
 	return it->second;
 }
 
-const catalogue::Stop* catalogue::TransportCatalogue::FindStop(std::string_view name) const {
+const domain::Stop* catalogue::TransportCatalogue::FindStop(std::string_view name) const {
 	auto it = stop_indexes_by_name_.find(name);
 	if (it == stop_indexes_by_name_.end()) {
 		return nullptr;
@@ -76,18 +76,18 @@ const std::set<std::string_view>* catalogue::TransportCatalogue::FindRoutes(std:
 	//ищу остановку в routes_containing_stop_
 	auto routes_containing_stop_it = routes_containing_stop_.find(name);
 	//если не нашел, то остановки нет и передаю nullptr
-	if (routes_containing_stop_it == routes_containing_stop_.end()){
+	if (routes_containing_stop_it == routes_containing_stop_.end()) {
 		return nullptr;
 	}
 	//если нашёл, то передаю ссылку на список маршрутов, в которых есть эта остановка
 	return &(routes_containing_stop_it->second);
 }
 
-catalogue::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view route) const {
+domain::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view route) const {
 	//получаю автобус
-	const Bus* bus = FindBus(route);
+	const domain::Bus* bus = FindBus(route);
 	if (bus == nullptr) {
-		return { 0,0,0., 0};
+		return { 0,0,0., 0 };
 	}
 	//переменная для получения уникальных остановок
 	std::unordered_set<std::string_view> unique;
@@ -100,7 +100,7 @@ catalogue::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view ro
 		unique.insert((*it)->name);
 		//тут считаю расстояния географические
 		if (it + 1 != bus->stops.end()) {
-			double current_distance = ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
+			double current_distance = geo::ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
 			geo_distance += current_distance;
 			route_distance += ComputeRouteDistance((*it)->name, (*(it + 1))->name);
 		}
@@ -110,8 +110,8 @@ catalogue::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view ro
 
 
 void catalogue::TransportCatalogue::AddDistance(std::string_view from, std::string_view to, int distance) {
-	const Stop* const stop_a = FindStop(from);
-	const Stop* const stop_b = FindStop(to);
+	const domain::Stop* const stop_a = FindStop(from);
+	const domain::Stop* const stop_b = FindStop(to);
 	if (stop_a && stop_b) {
 		distances_between_stops_[{ stop_a, stop_b }] = distance;
 	}

@@ -1,18 +1,31 @@
+#include "transport_catalogue.h"
+#include "request_handler.h"
+#include "json_reader.h"
 #include <iostream>
-#include <string>
-
-#include "input_reader.h"
-#include "stat_reader.h"
 #include <fstream>
 
-using namespace std;
+void LastPracTest() {
+    catalogue::TransportCatalogue catalogue;
+    render::Renderer renderer;
+    handler::RequestHandler handler(catalogue, renderer);
+    JsonReader reader(handler, std::cin);
+    reader.ProcessRequests(std::cout);
+}
+
+void FilesTest() {
+    catalogue::TransportCatalogue catalogue;
+    render::Renderer renderer;
+    handler::RequestHandler handler(catalogue, renderer);
+    std::ifstream input_file("s10_final_opentest_1.json");
+    JsonReader reader(handler, input_file);
+    std::ofstream output_file("s10_final_opentest_1_answer_mine.json");
+    reader.ProcessRequests(output_file);
+
+}
 
 int main() {
-    //создали каталог
-    catalogue::TransportCatalogue catalogue;
-    //создали ридер, считали данные
-    ireader::InputReader reader;
-    reader.Read(cin, catalogue);
-    //считали команды
-    sreader::Read(cin, cout, catalogue);
+
+    //FilesTest();
+    LastPracTest();
+    return 0;
 }
