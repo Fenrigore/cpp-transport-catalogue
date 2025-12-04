@@ -10,22 +10,8 @@ void render::Renderer::SetSettings(RenderSettings settings){
     render_settings_ = std::move(settings);
 }
 
-void render::Renderer::PrintMap(std::ostream& out){
-    FillContainers();
-    const double WIDTH = render_settings_.GetWidth();
-    const double HEIGHT = render_settings_.GetHeight();
-    const double PADDING = render_settings_.GetPadding();
-    const render::SphereProjector projector{ all_coordinates_.begin(), all_coordinates_.end(), WIDTH, HEIGHT, PADDING };
-    PrintLines(projector);
-    PrintBusNames(projector);
-    PrintStopPoints(projector);
-    PrintStopNames(projector);
-    doc_.Render(out);
-}
-
 std::string render::Renderer::GetMap()
 {
-    FillContainers();
     const double WIDTH = render_settings_.GetWidth();
     const double HEIGHT = render_settings_.GetHeight();
     const double PADDING = render_settings_.GetPadding();
@@ -99,7 +85,8 @@ void render::Renderer::PrintStopNames(const SphereProjector& proj){
     }
 }
 
-void render::Renderer::FillContainers(){
+void render::Renderer::FillContainers(std::vector<const domain::Bus*> buses) {
+    buses_.insert(buses.begin(), buses.end());
     //нужно пройти по автобусам и взять инфу об остановкам
     for (const domain::Bus* bus : buses_) {
         //вектор для заполнения указателями на кооринаты текущего пути

@@ -10,7 +10,7 @@ void handler::RequestHandler::NewStop(std::string_view name, geo::Coordinates co
 
 void handler::RequestHandler::NewBus(std::string_view route, const std::vector<std::string_view>& stops,bool is_circle){
 	catalogue_.AddBus(route, stops, is_circle);
-	renderer_.AddBus(catalogue_.FindBus(route));
+	//renderer_.AddBus(catalogue_.FindBus(route));
 }
 
 void handler::RequestHandler::AddStopsDistance(std::string_view from, std::string_view to, int distance){
@@ -33,7 +33,8 @@ void handler::RequestHandler::SetRenderSettings(render::RenderSettings settings)
 	renderer_.SetSettings(std::move(settings));
 }
 
-std::string handler::RequestHandler::GetMapStr() const{
+std::string handler::RequestHandler::GetMapStr() const {
+	renderer_.FillContainers(std::move(catalogue_.GetAllBuses()));
 	return renderer_.GetMap();
 }
 

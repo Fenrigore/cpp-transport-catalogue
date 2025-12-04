@@ -30,6 +30,7 @@ namespace catalogue {
 		domain::BusInfo GetBusInfo(std::string_view route) const;
 		void AddDistance(std::string_view from, std::string_view to, int distance);
 
+		std::vector<const domain::Bus*> GetAllBuses();
 	private:
 		std::deque<domain::Stop> stops_{};
 		std::unordered_map< std::string_view, domain::Stop*> stop_indexes_by_name_{};

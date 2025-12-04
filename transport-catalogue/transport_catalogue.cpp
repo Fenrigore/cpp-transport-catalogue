@@ -116,3 +116,11 @@ void catalogue::TransportCatalogue::AddDistance(std::string_view from, std::stri
 		distances_between_stops_[{ stop_a, stop_b }] = distance;
 	}
 }
+
+std::vector<const domain::Bus*> catalogue::TransportCatalogue::GetAllBuses(){
+	std::vector<const domain::Bus*> buses{};
+	for (const auto& para : bus_indexes_by_name_) {
+		buses.push_back(para.second);
+	}
+	return buses;
+}

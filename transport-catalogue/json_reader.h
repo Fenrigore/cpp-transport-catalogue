@@ -34,5 +34,3 @@ private:
 	json::Document input_doc_;
 	std::vector<DistanceInfo> distances_{};
 };
-
-

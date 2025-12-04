@@ -158,19 +158,15 @@ namespace render {
 	class Renderer {
 	public:
 		void AddBus(const domain::Bus* bus);
-	    
         void SetSettings(RenderSettings settings);
-
-        void PrintMap(std::ostream& out);
         std::string GetMap();
-
+        void FillContainers(std::vector<const domain::Bus*> buses);
 	private:
-
         void PrintLines(const SphereProjector& proj);
         void PrintBusNames(const SphereProjector& proj);
         void PrintStopPoints(const SphereProjector& proj);
         void PrintStopNames(const SphereProjector& proj);
-        void FillContainers();
+
         svg::Text CreateBusText(geo::Coordinates coords,
             const std::string& text, 
             std::string text_or_underlayer, 
