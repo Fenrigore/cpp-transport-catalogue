@@ -157,10 +157,10 @@ namespace render {
 
 	class Renderer {
 	public:
-		void AddBus(const domain::Bus* bus);
+		//void AddBus(const domain::Bus* bus);
         void SetSettings(RenderSettings settings);
         std::string GetMap();
-        void FillContainers(std::vector<const domain::Bus*> buses);
+        void FillContainers(const std::vector<const domain::Bus*>& buses);
 	private:
         void PrintLines(const SphereProjector& proj);
         void PrintBusNames(const SphereProjector& proj);

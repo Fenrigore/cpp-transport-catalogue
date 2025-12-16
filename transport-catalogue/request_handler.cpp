@@ -34,7 +34,7 @@ void handler::RequestHandler::SetRenderSettings(render::RenderSettings settings)
 }
 
 std::string handler::RequestHandler::GetMapStr() const {
-	renderer_.FillContainers(std::move(catalogue_.GetAllBuses()));
+	renderer_.FillContainers(catalogue_.GetAllBuses());
 	return renderer_.GetMap();
 }
 

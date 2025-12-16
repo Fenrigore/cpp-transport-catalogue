@@ -2,9 +2,9 @@
 #include <string>
 #include <sstream>
 
-void render::Renderer::AddBus(const domain::Bus* bus){
-	buses_.insert(bus);
-}
+//void render::Renderer::AddBus(const domain::Bus* bus){
+//	buses_.insert(bus);
+//}
 
 void render::Renderer::SetSettings(RenderSettings settings){
     render_settings_ = std::move(settings);
@@ -85,7 +85,7 @@ void render::Renderer::PrintStopNames(const SphereProjector& proj){
     }
 }
 
-void render::Renderer::FillContainers(std::vector<const domain::Bus*> buses) {
+void render::Renderer::FillContainers(const std::vector<const domain::Bus*>& buses) {
     buses_.insert(buses.begin(), buses.end());
     //нужно пройти по автобусам и взять инфу об остановкам
     for (const domain::Bus* bus : buses_) {
