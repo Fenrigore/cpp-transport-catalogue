@@ -7,7 +7,6 @@
 #include <iostream>
 
 // Вставьте сюда решение из предыдущего спринта
-//using TransportGraph = graph::DirectedWeightedGraph<double>;
 
 router::TransportRouter::TransportRouter(const catalogue::TransportCatalogue& catalogue)
 	: catalogue_{ catalogue } {}
@@ -16,9 +15,8 @@ void router::TransportRouter::SetRouteSettings(domain::RouteSettings settings){
 	settings_ = std::move(settings);
 }
 
-bool router::TransportRouter::ComputeItems(const std::string& from, const std::string& to){
+std::optional<std::vector<domain::Item>> router::TransportRouter::ComputeItems(std::string_view from, std::string_view to){
 	items_.clear();
-	//надо запросить оба контейнера расстояний из каталога
 
 	//получаю контейнер остановок
 	const std::deque<domain::Stop>& stops = catalogue_.GetAllStops();
@@ -81,7 +79,7 @@ bool router::TransportRouter::ComputeItems(const std::string& from, const std::s
 
 	//если остановки нет, то маршрут не построить
 	if (!from_stop || !to_stop) {
-		return false;
+		return std::nullopt;
 	}
 
 	//по указателям получаю id остановок
@@ -93,21 +91,20 @@ bool router::TransportRouter::ComputeItems(const std::string& from, const std::s
 	//если значение не получено
 	if (!route_result.has_value()) {
 		//сообщаю о неудаче
-		return false;
+		return std::nullopt;
 	}
 	//получаю RouteInfo, оно хранит индекс граней и общее время движения.
 	graph::Router<double>::RouteInfo route_info = route_result.value();
 
 	//тут берем ребро, по первой вершине пишем wait item, 
-	//затем по обеим вершинам находим автобус, сохраняем имя для item,
-	//рассчитываем сколько между ними остановок для рассчета span_count
-	// и собсно делаем итем bus 
+	//затем по информации из ребра пишет bus item
 
 	for (size_t i = 0; i < route_info.edges.size(); ++i) {
 		//получаю грань
 		const graph::Edge<double> edge = graph_->GetEdge(route_info.edges[i]);
 
-		//по грани получаю названия остановок и общее время пути
+		//по грани получаю названия остановок, общее время пути
+		//имя маршрута и кол-во пересекаемых остановок
 		std::string first_stop_name = id_stops_[edge.from]->name;
 		std::string last_stop_name = id_stops_[edge.to]->name;
 		double bus_travel_time = edge.weight - settings_.bus_wait_time;
@@ -121,7 +118,6 @@ bool router::TransportRouter::ComputeItems(const std::string& from, const std::s
 
 		//Оформляю bus item
 
-
 		items_.emplace_back(domain::Item{ domain::ItemType::Bus
 			, bus_name
 			, static_cast<double>(bus_travel_time)
@@ -129,9 +125,6 @@ bool router::TransportRouter::ComputeItems(const std::string& from, const std::s
 		
 	}
 
-	return true;
-}
-
-std::vector<domain::Item> router::TransportRouter::GetItems() const noexcept{
 	return std::move(items_);
 }
+

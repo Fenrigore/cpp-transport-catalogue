@@ -22,8 +22,7 @@ namespace handler {
         //получение карты
         std::string GetMapStr() const;
         //получение кратчайшего маршрута
-        bool NeedItems(const std::string& from, const std::string& to);
-        std::vector<domain::Item> GetItems() const;
+        std::optional<std::vector<domain::Item>> ComputeItems (const std::string& from, const std::string& to);
 
     private:
         catalogue::TransportCatalogue& catalogue_;

@@ -226,8 +226,11 @@ json::Node JsonReader::ProcessRouteRequest(const json::Dict& request)
 	//запрашиваю расчет маршрута и сразу проверяю удалось ли его построить
 	//если неудалось, значит нет пути, который бы соединял начальную и конечную остановки
 	//возвращаю инфу об этом
-	if (!handler_.NeedItems(from, to)) {
-		return json::Builder{}
+
+	std::optional<std::vector<domain::Item>> items_vec{ handler_.ComputeItems(from, to) };
+
+	if (!items_vec) {
+			return json::Builder{}
 			.StartDict()
 			.Key("request_id").Value(id)
 			.Key("error_message").Value("not found")
@@ -242,10 +245,9 @@ json::Node JsonReader::ProcessRouteRequest(const json::Dict& request)
 
 	//после рассчета будет готов вектор с информацией. Записываю в переменную для 
 	//последующего заполнения массива items_json_array
-	std::vector<domain::Item> items_vec = handler_.GetItems();
 
 	//заполняю массив
-	for (const auto& item_from_vec : items_vec) {
+	for (const auto& item_from_vec : items_vec.value()) {
 		json::Dict item{};
 		if (item_from_vec.type == domain::ItemType::Bus) {
 			item["bus"] = item_from_vec.name;

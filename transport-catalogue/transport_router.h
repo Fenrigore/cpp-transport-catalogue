@@ -16,9 +16,10 @@ namespace router {
 		inline static const double kilo = 1000.0;
 		inline static const double minutes_per_hour = 60.0;
 
+		//Я не могу перенести получение настроек в конструктор. 
+		//Настройки принимаются по json запросу намного позже создания экземпляра класса
 		void SetRouteSettings(domain::RouteSettings settings);
-		bool ComputeItems(const std::string& from, const std::string& to);
-		std::vector<domain::Item> GetItems() const noexcept;
+		std::optional<std::vector<domain::Item>> ComputeItems(std::string_view from, std::string_view to);
 	private:
 		std::vector<domain::Item> items_{};
 		domain::RouteSettings settings_{};

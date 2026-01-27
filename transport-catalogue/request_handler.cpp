@@ -44,13 +44,8 @@ std::string handler::RequestHandler::GetMapStr() const {
 	return renderer_.GetMap();
 }
 
-bool handler::RequestHandler::NeedItems(const std::string& from, const std::string& to) {
+std::optional<std::vector<domain::Item>> handler::RequestHandler::ComputeItems(const std::string& from, const std::string& to) {
 	return transport_router_.ComputeItems(from, to);
-}
-
-
-std::vector<domain::Item> handler::RequestHandler::GetItems() const{
-	return transport_router_.GetItems();
 }
 
 
