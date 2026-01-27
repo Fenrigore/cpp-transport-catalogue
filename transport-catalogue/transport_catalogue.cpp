@@ -5,24 +5,35 @@
 
 #include <iostream>
 
-int catalogue::TransportCatalogue::ComputeRouteDistance(std::string_view from, std::string_view to) const {
-	//получаю указатели на остановки
-	const domain::Stop* first_stop = FindStop(from);
-	const domain::Stop* second_stop = FindStop(to);
-	if (!first_stop || !second_stop) {
-		return 0;
+int catalogue::TransportCatalogue::GetRouteDistance(const domain::Stop* from, const domain::Stop* to) const
+{
+	int route_distance{};
+	auto route_distance_iter = distances_between_stops_.find({ from, to });
+	if (route_distance_iter != distances_between_stops_.end()) {
+		route_distance = route_distance_iter->second;
 	}
-	//ищу остановки в хэш таблице дистанций
-	auto distance_iter = distances_between_stops_.find({ first_stop, second_stop });
-	//если не нашлось расстояние от А до Б, то проверяю есть ли от Б до А
-	if (distance_iter == distances_between_stops_.end()) {
-		distance_iter = distances_between_stops_.find({ second_stop, first_stop });
-		//если и такого расстояния нет, значит нет
-		if (distance_iter == distances_between_stops_.end()) {
-			return 0;
+	else {
+		route_distance_iter = distances_between_stops_.find({ to, from });
+		if (route_distance_iter != distances_between_stops_.end()) {
+			route_distance = route_distance_iter->second;
 		}
 	}
-	return distance_iter->second;
+	return route_distance;
+}
+
+double catalogue::TransportCatalogue::GetGeoDistance(const domain::Stop* from, const domain::Stop* to) const
+{
+	double geo_distance{};
+	auto geo_distance_iter = geo_distances_between_stops_.find({ from, to });
+	if (geo_distance_iter != geo_distances_between_stops_.end()) {
+		geo_distance = geo_distance_iter->second;
+	}
+	else {
+		geo_distance = geo_distances_between_stops_[{ from, to }]
+			= geo_distances_between_stops_[{ to, from }]
+			= geo::ComputeDistance(from->coordinates, to->coordinates);
+	}
+	return geo_distance;
 }
 
 void catalogue::TransportCatalogue::AddStop(std::string_view name, geo::Coordinates coordinates) {
@@ -100,14 +111,12 @@ domain::BusInfo catalogue::TransportCatalogue::GetBusInfo(std::string_view route
 		unique.insert((*it)->name);
 		//тут считаю расстояния географические
 		if (it + 1 != bus->stops.end()) {
-			double current_distance = geo::ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
-			geo_distance += current_distance;
-			route_distance += ComputeRouteDistance((*it)->name, (*(it + 1))->name);
+			route_distance += GetRouteDistance(*it, *(it + 1));
+			geo_distance += GetGeoDistance(*it, *(it + 1));
 		}
 	}
 	return { bus->stops.size(),unique.size(), geo_distance,  route_distance };
 }
-
 
 void catalogue::TransportCatalogue::AddDistance(std::string_view from, std::string_view to, int distance) {
 	const domain::Stop* const stop_a = FindStop(from);
@@ -117,10 +126,14 @@ void catalogue::TransportCatalogue::AddDistance(std::string_view from, std::stri
 	}
 }
 
-std::vector<const domain::Bus*> catalogue::TransportCatalogue::GetAllBuses(){
+std::vector<const domain::Bus*> catalogue::TransportCatalogue::GetAllBuses() const {
 	std::vector<const domain::Bus*> buses{};
 	for (const auto& para : bus_indexes_by_name_) {
 		buses.push_back(para.second);
 	}
 	return buses;
+}
+
+const std::deque<domain::Stop>& catalogue::TransportCatalogue::GetAllStops()const {
+	return stops_;
 }

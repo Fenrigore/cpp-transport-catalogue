@@ -8,13 +8,24 @@ JsonReader::JsonReader(handler::RequestHandler& handler, std::istream& input_str
 
 void JsonReader::ProcessRequests(std::ostream& out_str) {
 	const json::Dict& root_dict = input_doc_.GetRoot().AsDict();
-
 	ParseBaseRequests(root_dict.at("base_requests").AsArray());
 	ParseRender(root_dict.at("render_settings").AsDict());
+	ParseRouteSettings(root_dict.at("routing_settings").AsDict());
 	json::Array to_out = ProcessStatRequests(root_dict.at("stat_requests").AsArray());
 	if (to_out.size() > 0) {
 		json::Print(json::Document(to_out), out_str);
 	}
+}
+
+void JsonReader::ParseRouteSettings(const json::Dict& route_settings_dict) {
+	//Просто передать в transport_router настройки
+	//std::cout << "Получены настройки маршрута \n";
+	//std::cout << "Скорость = " << route_settings_dict.at("bus_velocity").AsInt() <<" км/ч\n";
+	//std::cout << "Время ожидания автобусов = " << route_settings_dict.at("bus_velocity").AsInt() << std::endl;
+
+	
+	handler_.SetRouteSettings(domain::RouteSettings(route_settings_dict.at("bus_velocity").AsInt()
+	, route_settings_dict.at("bus_wait_time").AsInt()));
 }
 
 void JsonReader::ParseBaseRequests(const json::Array& requests) {
@@ -36,6 +47,7 @@ void JsonReader::ParseBaseRequests(const json::Array& requests) {
 			ParseBus(request_dict);
 		}
 	}
+	//type "Route"
 	for (const auto& distance : distances_) {
 		handler_.AddStopsDistance(distance.from, distance.to, distance.distance);
 	}
@@ -114,6 +126,8 @@ void JsonReader::ParseRender(const json::Dict& render_dict) {
 }
 
 
+
+
 svg::Color JsonReader::GiveMeColorDude(json::Node node)
 {
 	if (node.IsArray()) {
@@ -161,6 +175,9 @@ json::Array JsonReader::ProcessStatRequests(const json::Array& requests)
 			else if (type == "Map") {
 				response = ProcessMapRequest(request_dict);
 			}
+			else if (type == "Route") {
+				response = ProcessRouteRequest(request_dict);
+			}
 			builder_array.Value(std::move(response));
 		}
 		else {
@@ -197,6 +214,62 @@ json::Node JsonReader::ProcessBusRequest(const json::Dict& request)
 		.Key("route_length").Value(bus_info.route_distance)
 		.Key("stop_count").Value(static_cast<int>(bus_info.count))
 		.Key("unique_stop_count").Value(static_cast<int>(bus_info.unique))
+		.EndDict().Build();
+}
+
+json::Node JsonReader::ProcessRouteRequest(const json::Dict& request)
+{
+	//получаю id запроса
+	int id = request.at("id").AsInt();
+	std::string from = request.at("from").AsString();
+	std::string to = request.at("to").AsString();
+	//запрашиваю расчет маршрута и сразу проверяю удалось ли его построить
+	//если неудалось, значит нет пути, который бы соединял начальную и конечную остановки
+	//возвращаю инфу об этом
+	if (!handler_.NeedItems(from, to)) {
+		return json::Builder{}
+			.StartDict()
+			.Key("request_id").Value(id)
+			.Key("error_message").Value("not found")
+			.EndDict().Build();
+	}
+
+	//переменная для подсчета общего времени
+	double total_time{};
+
+	//создал массив в котором будет храниться инфа об маршруте и пересадках
+	json::Array items_json_array{};
+
+	//после рассчета будет готов вектор с информацией. Записываю в переменную для 
+	//последующего заполнения массива items_json_array
+	std::vector<domain::Item> items_vec = handler_.GetItems();
+
+	//заполняю массив
+	for (const auto& item_from_vec : items_vec) {
+		json::Dict item{};
+		if (item_from_vec.type == domain::ItemType::Bus) {
+			item["bus"] = item_from_vec.name;
+			item["span_count"] = item_from_vec.span_count_for_bus.value();
+			item["time"] = item_from_vec.time;
+			item["type"] = "Bus";
+			//записываю общее время
+			total_time += item_from_vec.time;
+		}
+		else {
+			item["stop_name"] = item_from_vec.name;
+			item["time"] =  item_from_vec.time;
+			item["type"] = "Wait";
+			//записываю общее время
+			total_time += item_from_vec.time;
+		}
+		items_json_array.push_back(item);
+	}
+
+	return json::Builder{}
+		.StartDict()
+		.Key("request_id").Value(id)
+		.Key("total_time").Value(total_time)
+		.Key("items").Value(items_json_array)
 		.EndDict().Build();
 }
 
@@ -238,8 +311,14 @@ json::Node JsonReader::ProcessMapRequest(const json::Dict& request) {
 	// Получаем SVG карту через RequestHandler
 	std::string svg_map = handler_.GetMapStr();
 
+	//std::ofstream output_map("map.svg");
+	//output_map << svg_map;
+	//output_map.close();
+
 	return json::Builder{}.StartDict()
 		.Key("request_id").Value(id)
 		.Key("map").Value(std::move(svg_map))
 		.EndDict().Build();
 }
+
+

@@ -1,5 +1,6 @@
 #include "transport_catalogue.h"
 #include "request_handler.h"
+#include "transport_router.h"
 #include "json_reader.h"
 #include <iostream>
 #include <fstream>
@@ -7,7 +8,8 @@
 void LastPracTest() {
     catalogue::TransportCatalogue catalogue;
     render::Renderer renderer;
-    handler::RequestHandler handler(catalogue, renderer);
+    router::TransportRouter router(catalogue);
+    handler::RequestHandler handler(catalogue, renderer, router);
     JsonReader reader(handler, std::cin);
     reader.ProcessRequests(std::cout);
 }
@@ -15,10 +17,11 @@ void LastPracTest() {
 void FilesTest() {
     catalogue::TransportCatalogue catalogue;
     render::Renderer renderer;
-    handler::RequestHandler handler(catalogue, renderer);
-    std::ifstream input_file("s10_final_opentest_1.json");
+    router::TransportRouter router(catalogue);
+    handler::RequestHandler handler(catalogue, renderer, router);
+    std::ifstream input_file("e4_input.json");
     JsonReader reader(handler, input_file);
-    std::ofstream output_file("s10_final_opentest_1_answer_mine.json");
+    std::ofstream output_file("e4_output_mine.json");
     reader.ProcessRequests(output_file);
 
 }

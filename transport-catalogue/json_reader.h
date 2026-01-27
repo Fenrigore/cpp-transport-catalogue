@@ -21,6 +21,7 @@ private:
 	void ParseStop(const json::Dict& stop_dict);
 	void ParseBus(const json::Dict& bus_dict);
 	void ParseRender(const json::Dict& render_dict);
+	void ParseRouteSettings(const json::Dict& route_settings_dict);
 	svg::Color GiveMeColorDude(json::Node node);
 
 
@@ -28,6 +29,7 @@ private:
 	json::Node ProcessBusRequest(const json::Dict& request);
 	json::Node ProcessStopRequest(const json::Dict& request);
 	json::Node ProcessMapRequest(const json::Dict& request);
+	json::Node ProcessRouteRequest(const json::Dict& request);
 
 
 	handler::RequestHandler& handler_;
